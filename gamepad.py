@@ -3,23 +3,35 @@ import os
 import time
 import traceback
 from pathlib import Path
+import argparse
 
 from evdev import InputDevice, ecodes, UInput
 
-# ─────── CONFIG ───────
-DEVICE_LINK        = '/dev/input/by-id/usb-1038_SteelSeries_Stratus_Duo-event-joystick'
-SYMLINK_EVENT_PATH = '/tmp/gamepad-event'
-SYMLINK_JS_PATH    = '/tmp/gamepad-js'
-VIRT_NAME          = 'VirtualGamepad'
+# ─────── GLOBAL VARS (set by command line) ───────
+# Will be populated by parse_args()
+ARGS = None
+
+# ─────── ARGUMENT PARSING ───────
+def parse_args(argv=None):
+    parser = argparse.ArgumentParser(description="Gamepad Docker Binding Script")
+    parser.add_argument('--device-link', type=str, default='/dev/input/by-id/usb-1038_SteelSeries_Stratus_Duo-event-joystick',
+                        help='Path to the real gamepad device link')
+    parser.add_argument('--event-path', type=str, default='/tmp/gamepad-event',
+                        help='Desired path for the event symlink')
+    parser.add_argument('--js-path', type=str, default='/tmp/gamepad-js',
+                        help='Desired path for the joystick symlink')
+    parser.add_argument('--virtual-name', type=str, default='VirtualGamepad',
+                        help='Name for the virtual gamepad device')
+    return parser.parse_args(argv)
 
 # ─────── UTILITY FUNCTIONS ───────
 
 def wait_for_device():
     """Block until the real gamepad appears and can be opened."""
     while True:
-        if os.path.exists(DEVICE_LINK):
+        if os.path.exists(ARGS.device_link):
             try:
-                dev = InputDevice(DEVICE_LINK)
+                dev = InputDevice(ARGS.device_link)
                 print(f"✅ Opened real device: {dev.name}")
                 return dev
             except Exception as e:
@@ -80,14 +92,14 @@ def create_symlinks():
                 name = f.read().strip()
         except FileNotFoundError:
             continue
-        if name != VIRT_NAME:
+        if name != ARGS.virtual_name:
             continue
         # Found virtual device: link its eventX and jsY
         for child in os.listdir(os.path.join(sys_input, entry)):
             if child.startswith('event'):
-                src, dst = f"/dev/input/{child}", SYMLINK_EVENT_PATH
+                src, dst = f"/dev/input/{child}", ARGS.event_path
             elif child.startswith('js'):
-                src, dst = f"/dev/input/{child}", SYMLINK_JS_PATH
+                src, dst = f"/dev/input/{child}", ARGS.js_path
             else:
                 continue
             if os.path.exists(src):
@@ -99,7 +111,7 @@ def create_symlinks():
                 os.symlink(src, dst)
                 print(f"🔗 {dst} → {src}")
         return True
-    print(f"❌ Could not find {VIRT_NAME} to symlink")
+    print(f"❌ Could not find {ARGS.virtual_name} to symlink")
     return False
 
 # ─────── MAIN LOOP ───────
@@ -117,7 +129,7 @@ def run():
     # 2) Create the virtual device with matching IDs
     ui = UInput(
         caps,
-        name=VIRT_NAME,
+        name=ARGS.virtual_name,
         bustype=bus,
         vendor=vendor,
         product=product,
@@ -145,5 +157,14 @@ def run():
             traceback.print_exc()
             time.sleep(1)
 
-if __name__ == '__main__':
+def main(cli_args=None):
+    """
+    Main function to setup and run the gamepad forwarder.
+    Accepts cli_args for testing purposes.
+    """
+    global ARGS
+    ARGS = parse_args(cli_args)
     run()
+
+if __name__ == '__main__':
+    main()
