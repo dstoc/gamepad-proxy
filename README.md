@@ -10,53 +10,58 @@ If the real gamepad disconnects, the script waits for it to reappear and then re
 
 ## Usage
 
-1.  **Installation:**
-    1.  Install `uv` if you haven't already (see [uv's installation guide](https://github.com/astral-sh/uv#installation)).
-    2.  Clone this repository.
-    3.  Navigate to the cloned directory.
-    4.  The following commands set up the environment:
-        ```bash
-        uv venv # Creates a virtual environment using .python-version if present
-        source .venv/bin/activate # Or .venv\Scripts\activate on Windows
-        uv pip install .[dev] # Installs runtime and development dependencies
-        ```
-    This project includes a `.python-version` file specifying a compatible Python version (e.g., 3.7 or higher). If you have a Python version manager like `pyenv` installed, it might automatically pick up this version. `uv` will also use this version to create the virtual environment if the specified Python interpreter is available. Otherwise, `uv` will use a compatible Python version found on your system.
+## Installation
 
-2.  **Running the script:**
-
-    ### Method 1: Using `python3` (with activated environment)
-
-    Ensure your virtual environment is activated (`source .venv/bin/activate`):
+1.  Install `uv` if you haven't already (see [uv's installation guide](https://docs.astral.sh/uv/getting-started/installation/)).
+2.  Clone this repository:
     ```bash
-    python3 gamepad.py [OPTIONS]
+    git clone <repository_url> # TODO: Replace <repository_url> with the actual URL
+    cd <repository_directory> # TODO: Replace <repository_directory> with the actual directory name
     ```
-    Available options:
-    *   `--device-link`: Path to the real gamepad device link.
-        *   Default: `/dev/input/by-id/usb-1038_SteelSeries_Stratus_Duo-event-joystick`
-    *   `--event-path`: Desired path for the event symlink.
-        *   Default: `/tmp/gamepad-event`
-    *   `--js-path`: Desired path for the joystick symlink.
-        *   Default: `/tmp/gamepad-js`
-    *   `--virtual-name`: Name for the virtual gamepad device.
-        *   Default: `VirtualGamepad`
-
-    For example:
+3.  Set up the Python environment and install dependencies:
     ```bash
-    python3 gamepad.py --device-link /dev/input/by-id/your-device-id
+    uv venv # Creates a virtual environment (respects .python-version if present)
+    source .venv/bin/activate  # On Windows use: .venv\Scriptsctivate
+    uv pip install .[dev]     # Installs runtime and development (e.g., pytest) dependencies
     ```
+    This project includes a `.python-version` file. `uv` will attempt to use this Python version if available. Otherwise, it uses a compatible Python found on your system.
 
-    ### Method 2: Using `uv run`
+## Running the Script
 
-    Alternatively, after installing dependencies (with `uv pip install .[dev]`), you can use `uv run` to execute the script. This command runs scripts defined in `pyproject.toml` within the project's managed environment.
-    The script is registered as `gamepad-mapper`.
-    ```bash
-    uv run gamepad-mapper -- [OPTIONS]
-    ```
-    For example, to specify a custom device link:
-    ```bash
-    uv run gamepad-mapper -- --device-link /dev/input/by-id/your-device-id
-    ```
-    Note the `--` separator between `uv run gamepad-mapper` and the script's own options. This tells `uv` that subsequent arguments are for the script, not for `uv` itself.
+The recommended way to run the script is using `uv run`, which automatically manages the Python environment:
+```bash
+uv run gamepad-mapper -- [OPTIONS]
+```
+The script is registered as `gamepad-mapper` in `pyproject.toml`. For example, to specify a custom device link:
+```bash
+uv run gamepad-mapper -- --device-link /dev/input/by-id/your-device-id --event-path /tmp/custom-event
+```
+**Note:** The `--` is important to separate options for `uv run` itself from options intended for `gamepad-mapper`.
+
+Available options for `gamepad-mapper`:
+*   `--device-link`: Path to the real gamepad device link.
+    *   Default: `/dev/input/by-id/usb-1038_SteelSeries_Stratus_Duo-event-joystick`
+*   `--event-path`: Desired path for the event symlink.
+    *   Default: `/tmp/gamepad-event`
+*   `--js-path`: Desired path for the joystick symlink.
+    *   Default: `/tmp/gamepad-js`
+*   `--virtual-name`: Name for the virtual gamepad device.
+    *   Default: `VirtualGamepad`
+
+<details>
+<summary>Alternative: Using `python3` (manual environment activation)</summary>
+
+If you prefer, you can activate the virtual environment first and then run the script directly with `python3`:
+```bash
+source .venv/bin/activate  # On Windows use: .venv\Scriptsctivate
+python3 gamepad.py [OPTIONS]
+```
+For example:
+```bash
+python3 gamepad.py --device-link /dev/input/by-id/your-device-id
+```
+(See above for the full list of options.)
+</details>
 
 3.  **Inside the Docker container:**
     *   The `gamepad.py` script creates symlinks on the host machine (e.g., `/tmp/gamepad-event` and `/tmp/gamepad-js` by default). To make the gamepad accessible inside your container, you should use the `--device` flag with `podman run` (or the equivalent for other container runtimes). This flag will map the actual gamepad device node (to which the symlink points) into your container.
@@ -101,11 +106,10 @@ The tests for this project are written using `pytest`.
 
 2.  **Execute Tests:** To run the tests, navigate to the root of the project directory and execute:
     ```bash
-    pytest tests/
+    pytest tests/ # Or: uv run pytest tests/
     ```
 
-3.  **Running Tests Requiring `UInput` Permissions:** Some integration tests interact with `evdev.UInput` to create virtual devices. Access to `/dev/uinput` (which `UInput` uses) requires appropriate permissions.
-    *   On many systems, this is managed by `udev` rules, which might grant access to users in a specific group (e.g., `input` or `uinput`). Ensure your user is part of such a group (e.g., by running `sudo usermod -aG input $USER` and then logging out and back in).
-    *   If tests fail due to permission errors related to `/dev/uinput`, please check your system's udev rules (often in `/etc/udev/rules.d/` or `/lib/udev/rules.d/`) and your user's group memberships. You may need to create or modify a udev rule to grant your user write access to `/dev/uinput`. For example, a rule like `KERNEL=="uinput", MODE="0660", GROUP="input", OPTIONS+="static_node=uinput"` could be used.
-    *   The tests that require these permissions are designed to skip themselves automatically if they detect insufficient privileges, rather than failing outright.
-    *   While running tests with `sudo pytest tests/` might bypass these permission checks, it's recommended to configure user permissions correctly. This approach is more secure and ensures that both the application and its tests can run under normal user privileges where possible.
+3.  **Permissions for Integration Tests:** The integration test `test_event_forwarding` creates virtual input devices using `evdev.UInput` and thus requires write access to `/dev/uinput`.
+    *   If your user account does not have the necessary permissions, this test will be automatically skipped.
+    *   To enable this test, ensure your user is in the appropriate group (commonly `input` or `uinput`) or that `udev` rules grant access. Consult your system's documentation for `udev` configuration. For example, you might add your user to the `input` group: `sudo usermod -aG input $USER` (requires logout/login to take effect), or create a udev rule.
+    *   Running tests with `sudo` to bypass permission checks is discouraged for security reasons. It's better to configure user permissions correctly.
