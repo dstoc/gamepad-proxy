@@ -20,11 +20,10 @@ If the real gamepad disconnects, the script waits for it to reappear and then re
     ```
 3.  Set up the Python environment and install dependencies:
     ```bash
-    uv venv # Creates a virtual environment (respects .python-version if present)
-    source .venv/bin/activate  # On Windows use: .venv\Scriptsctivate
-    uv pip install .[dev]     # Installs runtime and development (e.g., pytest) dependencies
+    uv venv # Creates a virtual environment. Uses .python-version (if present and Python available) or a compatible Python.
+    uv pip install .[dev] # Installs runtime and dev dependencies into the project's virtual environment.
     ```
-    This project includes a `.python-version` file. `uv` will attempt to use this Python version if available. Otherwise, it uses a compatible Python found on your system.
+    This project includes a `.python-version` file (specifying Python 3.13) to guide `uv`. If Python 3.13 is not installed but managed by `uv` (e.g. via `uv python install 3.13`), `uv venv` will use it. Otherwise, ensure a compatible Python version (>=3.7) is available.
 
 ## Running the Script
 
@@ -47,21 +46,6 @@ Available options for `gamepad-mapper`:
     *   Default: `/tmp/gamepad-js`
 *   `--virtual-name`: Name for the virtual gamepad device.
     *   Default: `VirtualGamepad`
-
-<details>
-<summary>Alternative: Using `python3` (manual environment activation)</summary>
-
-If you prefer, you can activate the virtual environment first and then run the script directly with `python3`:
-```bash
-source .venv/bin/activate  # On Windows use: .venv\Scriptsctivate
-python3 gamepad.py [OPTIONS]
-```
-For example:
-```bash
-python3 gamepad.py --device-link /dev/input/by-id/your-device-id
-```
-(See above for the full list of options.)
-</details>
 
 3.  **Inside the Docker container:**
     *   The `gamepad.py` script creates symlinks on the host machine (e.g., `/tmp/gamepad-event` and `/tmp/gamepad-js` by default). To make the gamepad accessible inside your container, you should use the `--device` flag with `podman run` (or the equivalent for other container runtimes). This flag will map the actual gamepad device node (to which the symlink points) into your container.
@@ -106,8 +90,9 @@ The tests for this project are written using `pytest`.
 
 2.  **Execute Tests:** To run the tests, navigate to the root of the project directory and execute:
     ```bash
-    pytest tests/ # Or: uv run pytest tests/
+    uv run pytest tests/
     ```
+    Alternatively, if your shell is configured to use executables from the virtual environment (e.g., after manual activation, though not required for `uv run`), `pytest tests/` would also work.
 
 3.  **Permissions for Integration Tests:** The integration test `test_event_forwarding` creates virtual input devices using `evdev.UInput` and thus requires write access to `/dev/uinput`.
     *   If your user account does not have the necessary permissions, this test will be automatically skipped.
