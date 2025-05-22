@@ -8,7 +8,7 @@ from evdev import UInput, ecodes, InputDevice, AbsInfo
 from evdev.uinput import UInputError
 from pathlib import Path
 import argparse # For Namespace
-from typing import List, Tuple, Any, Dict, Optional, Iterator, Union
+from typing import List, Tuple, Any, Dict, Optional, Iterator, Union, cast, Sequence
 
 
 # Unit tests for argument parsing (from previous successful runs)
@@ -82,7 +82,7 @@ def mock_real_gamepad() -> Iterator[Tuple[UInput, str]]:
     real_device_event_path: Optional[str] = None
     try:
         print(f"Attempting to create mock real gamepad: {MOCK_REAL_DEVICE_NAME} with events: {CAPS}")
-        ui_real = UInput(events=CAPS, name=MOCK_REAL_DEVICE_NAME, version=0x1)  # type: ignore[arg-type]
+        ui_real = UInput(events=cast(Optional[Dict[int, Sequence[int]]], CAPS), name=MOCK_REAL_DEVICE_NAME, version=0x1)
         if ui_real.device:
             real_device_event_path = ui_real.device.path
         else:

@@ -4,7 +4,7 @@ import time
 import traceback
 from pathlib import Path
 import argparse
-from typing import List, Optional, Dict, Tuple, Any, Union
+from typing import List, Optional, Dict, Tuple, Any, Union, cast, Sequence
 
 from evdev import InputDevice, ecodes, UInput
 from evdev.device import AbsInfo
@@ -164,7 +164,7 @@ def run() -> None:
 
     # 2) Create the virtual device with matching IDs
     ui: UInput = UInput(
-        caps,  # type: ignore[arg-type]
+        cast(Optional[Dict[int, Sequence[int]]], caps),
         name=ARGS.virtual_name, # ARGS is checked at the start of run()
         bustype=bus,
         vendor=vendor,
