@@ -1,6 +1,6 @@
 # Gamepad Docker Binding
 
-This script facilitates binding a gamepad device into a Docker container, enabling its use within containerized applications. A key feature of this script is its ability to handle device reconnections seamlessly, meaning the Docker container does not need to be restarted if the gamepad is unplugged and plugged back in.
+This script creates a persistent virtual gamepad from a physical one, designed to be resilient to device reconnections. Its primary goal is to ensure that applications see a stable gamepad device even if the physical gamepad is unplugged and plugged back in. This makes it particularly useful for providing stable gamepad access to containerized applications, such as those running in Docker, without needing to restart containers on device changes.
 
 ## How it Works
 
@@ -73,6 +73,10 @@ Available options for `gamepad-mapper`:
 *   **Resilient to Reconnections:** No need to restart your Docker container if the gamepad is reconnected.
 *   **Stable Device Path:** Provides stable symlinks to the gamepad events, even if the underlying `/dev/input/event*` number changes.
 *   **Customizable:** Device paths and names can be configured via command-line arguments.
+
+## Acknowledgements
+
+The initial version of this script was developed with assistance from ChatGPT (model o3-mini-high). Subsequent refinements and feature development were contributed by Jules (Google).
 
 ## Future Development
 
