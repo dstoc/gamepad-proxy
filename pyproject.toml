@@ -1,0 +1,18 @@
+[project]
+name = "gamepad-docker-binding"
+version = "0.1.0"
+description = "A script to bind a gamepad into a Docker container, resilient to reconnections."
+requires-python = ">=3.7"
+dependencies = [
+    "evdev>=1.6.0" # Specify a version that's known to work or the latest
+]
+
+[project.scripts]
+gamepad-mapper = "gamepad:main"
+mypy = "mypy.__main__:main"
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0.0", "mypy>=1.0.0"] # Specify a reasonable minimum version
+
+[tool.mypy]
+ignore_missing_imports = true
