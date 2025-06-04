@@ -12,30 +12,28 @@ If the real gamepad disconnects, the script waits for it to reappear and then re
 
 ## Installation
 
-1.  Install `uv` if you haven't already (see [uv's installation guide](https://docs.astral.sh/uv/getting-started/installation/)).
+1.  Install the Rust toolchain via [rustup](https://rustup.rs/).
 2.  Clone this repository:
     ```bash
     git clone <repository_url> # TODO: Replace <repository_url> with the actual URL
     cd <repository_directory> # TODO: Replace <repository_directory> with the actual directory name
     ```
-3.  Set up the Python environment and install dependencies:
+3.  Build the project:
     ```bash
-    uv venv # Creates a virtual environment. Uses .python-version (if present and Python available) or a compatible Python.
-    uv pip install .[dev] # Installs runtime and dev dependencies into the project's virtual environment.
+    cargo build --release
     ```
-    This project includes a `.python-version` file (specifying Python 3.13) to guide `uv`. If Python 3.13 is not installed but managed by `uv` (e.g. via `uv python install 3.13`), `uv venv` will use it. Otherwise, ensure a compatible Python version (>=3.7) is available.
+    The resulting binary will be located at `target/release/gamepad-proxy`.
 
-## Running the Script
+## Running the Program
 
-The recommended way to run the script is using `uv run`, which automatically manages the Python environment:
+Use Cargo to run the binary:
 ```bash
-uv run gamepad-mapper -- [OPTIONS]
+cargo run -- [OPTIONS]
 ```
-The script is registered as `gamepad-mapper` in `pyproject.toml`. For example, to specify a custom device link:
+For example, to specify a custom device link:
 ```bash
-uv run gamepad-mapper -- --device-link /dev/input/by-id/your-device-id --event-path /tmp/custom-event
+cargo run -- --device-link /dev/input/by-id/your-device-id --event-path /tmp/custom-event
 ```
-**Note:** The `--` is important to separate options for `uv run` itself from options intended for `gamepad-mapper`.
 
 Available options for `gamepad-mapper`:
 *   `--device-link`: Path to the real gamepad device link.
@@ -48,7 +46,7 @@ Available options for `gamepad-mapper`:
     *   Default: `VirtualGamepad`
 
 3.  **Inside the Docker container:**
-    *   The `gamepad.py` script creates symlinks on the host machine (e.g., `/tmp/gamepad-event` and `/tmp/gamepad-js` by default). To make the gamepad accessible inside your container, you should use the `--device` flag with `podman run` (or the equivalent for other container runtimes). This flag will map the actual gamepad device node (to which the symlink points) into your container.
+    *   The `gamepad-proxy` binary creates symlinks on the host machine (e.g., `/tmp/gamepad-event` and `/tmp/gamepad-js` by default). To make the gamepad accessible inside your container, you should use the `--device` flag with `podman run` (or the equivalent for other container runtimes). This flag will map the actual gamepad device node (to which the symlink points) into your container.
 
         Example using default symlink paths:
         ```bash
@@ -58,7 +56,7 @@ Available options for `gamepad-mapper`:
             your-container-image
         ```
 
-        If you used custom paths for the symlinks when running `gamepad.py` (e.g., `/opt/gamepad/event` and `/opt/gamepad/js`), you would adjust the `--device` flags accordingly:
+        If you used custom paths for the symlinks when running `gamepad-proxy` (e.g., `/opt/gamepad/event` and `/opt/gamepad/js`), you would adjust the `--device` flags accordingly:
         ```bash
         podman run --rm -it \
             --device=/opt/gamepad/event \
@@ -88,17 +86,11 @@ A detailed testing strategy, including plans for unit and integration tests, is 
 
 ### Running Tests
 
-The tests for this project are written using `pytest`.
+The tests for this project are written in Rust using Cargo's built‑in test framework.
 
-1.  **Install Dependencies:** First, ensure you have installed the development dependencies. If you followed the installation steps above, `uv pip install .[dev]` will have installed `pytest`.
+1. **Install the Rust toolchain** if you haven't already. The easiest way is via [rustup](https://rustup.rs/).
 
-2.  **Execute Tests:** To run the tests, navigate to the root of the project directory and execute:
+2. **Execute Tests:** Navigate to the project root and run:
     ```bash
-    uv run pytest tests/
+    cargo test
     ```
-    Alternatively, if your shell is configured to use executables from the virtual environment (e.g., after manual activation, though not required for `uv run`), `pytest tests/` would also work.
-
-3.  **Permissions for Integration Tests:** The integration test `test_event_forwarding` creates virtual input devices using `evdev.UInput` and thus requires write access to `/dev/uinput`.
-    *   If your user account does not have the necessary permissions, this test will be automatically skipped.
-    *   To enable this test, ensure your user is in the appropriate group (commonly `input` or `uinput`) or that `udev` rules grant access. Consult your system's documentation for `udev` configuration. For example, you might add your user to the `input` group: `sudo usermod -aG input $USER` (requires logout/login to take effect), or create a udev rule.
-    *   Running tests with `sudo` to bypass permission checks is discouraged for security reasons. It's better to configure user permissions correctly.
